@@ -1,0 +1,22 @@
+
+[Unit]
+Description=Etcd Discovery Service
+Require=docker.service
+After=docker.service
+
+[Service]
+Restart=on-failure
+RestartSec=10
+ExecStartPre=/usr/bin/docker pull gambol99/etcd-discovery:latest
+
+ExecStart=/usr/bin/docker run --net=host \
+    --name=etcd-discovery \
+    -v /etc/sysconfig:/etc/sysconfig \
+    -v /etc/ssl/certs:/etc/ssl/certs \
+    gambol99/etcd-discovery:latest \
+    -logtostderr \
+    -v=10 \
+    -environment-file=/etc/sysconfig/etcd-discovery
+
+ExecStop=/usr/bin/docker kill etcd-discovery
+ExecStop=/usr/bin/docker rm -v etcd-discovery

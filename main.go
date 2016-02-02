@@ -70,20 +70,12 @@ func main() {
 
 	cluster_state := "new"
 
-	// step: create an etcd client for us
-	client, err := newEtcdClient(getEtcdEndpoints(instances))
-	if err != nil {
-		glog.Warningf("failed to create an etcd client, error: %s", err)
-	} else {
-		found, err := client.hasMember(identity.InstanceID)
-		if err != nil {
-			glog.Warningf("failed to check if we're in the cluster, error: %s", err)
-		}
-		if found {
-			cluster_state = "existing"
-		}
+	// step: create an etcd client for us and check if we can connect to cluster
+	if _, err := newEtcdClient(getEtcdEndpoints(instances)); err == nil {
+		cluster_state = "existing"
 	}
 
+	// step: if in proxy mode, its always existing
 	if config.proxyMode {
 		cluster_state = "existing"
 	}

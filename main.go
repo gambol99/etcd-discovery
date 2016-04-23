@@ -142,29 +142,6 @@ func syncMembership(identity *awsIdentity, instances []string) error {
 
 	glog.Infof("found %d members in the cluster", len(members))
 
-	// step: if we are not in the cluster, attempt to add our self
-	glog.V(3).Infof("checking the member %s is part of the cluster", memberID)
-	if found, err := client.hasMember(memberID); err != nil {
-		return err
-	} else if !found {
-		glog.Infof("member %s is not presently part of the cluster, adding now", memberID)
-
-		nodeAddress := identity.PrivateDNSName
-		if config.privateIPs {
-			nodeAddress = identity.LocalIP
-		}
-		peerURL := getPeerURL(nodeAddress)
-
-		glog.Infof("attempting to add the member, peerURL: %s", peerURL)
-
-		if err := client.addMember(memberID, peerURL); err != nil {
-			glog.Errorf("failed to add the member into the cluster, error: %s", err)
-		}
-		glog.Infof("successfully added the member: %s to cluster", memberID)
-	} else {
-		glog.Infof("member %s is already in the cluster, moving to cleanup", memberID)
-	}
-
 	// step: attempt to remove any boxes from the cluster which have terminated
 	glog.Infof("checking if any cluster members can been cleaned out")
 
@@ -196,6 +173,29 @@ func syncMembership(identity *awsIdentity, instances []string) error {
 		}
 	}
 
+	// step: if we are not in the cluster, attempt to add our self
+	glog.V(3).Infof("checking the member %s is part of the cluster", memberID)
+	if found, err := client.hasMember(memberID); err != nil {
+		return err
+	} else if !found {
+		glog.Infof("member %s is not presently part of the cluster, adding now", memberID)
+
+		nodeAddress := identity.PrivateDNSName
+		if config.privateIPs {
+			nodeAddress = identity.LocalIP
+		}
+		peerURL := getPeerURL(nodeAddress)
+
+		glog.Infof("attempting to add the member, peerURL: %s", peerURL)
+
+		if err := client.addMember(memberID, peerURL); err != nil {
+			glog.Errorf("failed to add the member into the cluster, error: %s", err)
+		}
+		glog.Infof("successfully added the member: %s to cluster", memberID)
+	} else {
+		glog.Infof("member %s is already in the cluster, moving to cleanup", memberID)
+	}
+
 	return nil
 }
 
@@ -204,7 +204,7 @@ func writeEnvironment(filename string, identity *awsIdentity, members []*ec2.Ins
 	peersURL := getPeerURLs(members)
 	mode := "off"
 	if proxy {
-		mode  = "on"
+		mode = "on"
 	}
 	content := fmt.Sprintf(`
 ETCD_INITIAL_CLUSTER_STATE=%s
